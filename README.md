@@ -34,7 +34,7 @@ you also need to install the latest monitoring-plugins and mtr package on all ho
 installing the sensors
 ----------------------
 
-as long as you point your document root to the sensor/ subdirectory, it should be safe to simple deploy the whole project directory to your webserve. If you like to limit what you deploy, the required files (continuing with 4a2901f3-716c-4522-a03e-959a4acbd04a as your UUID) are:
+as long as you point your document root to the sensor/ subdirectory, it should be safe to simple deploy the whole project directory to your webserver. If you like to limit what you deploy, the required files (continuing with 4a2901f3-716c-4522-a03e-959a4acbd04a as your UUID) are:
 
     keys/
     keys/4a2901f3-716c-4522-a03e-959a4acbd04a.pub
