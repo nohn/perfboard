@@ -42,6 +42,8 @@ as long as you point your document root to the sensor/ subdirectory, it should b
     sensor/
     sensor/index.php
 
+if you are utilizing your friend's servers as sensors, you should of course not give away your private key (the .pem-file).
+
 installing the collector and the frontend
 -----------------------------------------
 
