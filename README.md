@@ -1,7 +1,7 @@
 about
 =====
 
-Perfboard is a web performance dashboard based on PHP. It's a by-product of my master's thesis, so some parts are more complicated than they'd neccessarly need to be.
+Perfboard is a web performance dashboard based on PHP. It's a by-product of my master's thesis, so some parts are more complicated than they neccessarly need to be, on the other hand it's more a proof of concept than a sophisticated product. if you don't like some parts, feel free to contribute.
 
 ![Small Screen Example](docs/example1.png)
 
