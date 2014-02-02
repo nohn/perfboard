@@ -1,0 +1,21 @@
+<?php
+
+$identity = 'FIXXME';
+
+$objects = array(
+    'Example 1' => array(
+        'url' => 'http://www.example.com/',
+        'string' => 'Example1',
+        'warn' => '100',
+        'crit' => '200'),
+    'Example 2' => array(
+        'url' => 'http://www.example.com/',
+        'string' => 'Example',
+        'warn' => '100',
+        'crit' => '200'),
+);
+
+$sensors = array(
+    'Sensor 1' => array('url' => 'http://sensor1.example.com/'),
+    'Sensor 2' => array('url' => 'http://sensor2.example.com/'),
+);
