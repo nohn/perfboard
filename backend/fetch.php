@@ -13,7 +13,7 @@ foreach ($objects as $object_name => $object_data) {
             'string' => $object_data['string']);
 
         $http_query = http_build_query($parameters);
-        $key = file_get_contents($key_path);
+        $key = file_get_contents('../keys/'.$identity.'.pem');
         $key_id = openssl_get_privatekey($key);
         openssl_sign($http_query, $signature, $key);
         openssl_free_key($key_id);
