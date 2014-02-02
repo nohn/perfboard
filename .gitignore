@@ -1,4 +1,5 @@
 nbproject
 config.php
-privkey.pem
+*.pem
+*.pub
 *~
