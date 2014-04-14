@@ -1,10 +1,12 @@
 <?php
 
 // Ubuntu
-$MTR = '/usr/bin/mtr';
-$CHECK_HTTP = '/usr/lib/nagios/plugins/check_http';
+// $MTR = '/usr/bin/mtr';
+// $CHECK_HTTP = '/usr/lib/nagios/plugins/check_http';
 // Voyage
 // $MTR = '/usr/local/sbin/mtr';
+$MTR = '/usr/sbin/mtr';
+$CHECK_HTTP = '/usr/lib64/nagios/plugins/check_http';
 
 $return = array();
 
