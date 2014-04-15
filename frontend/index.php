@@ -35,7 +35,7 @@
         ?>
         <table style="width: 100%; height: 100%">
             <tr>
-                <th>&nbsp;</th>
+                <th>response time (ms)</th>
                 <?php
                 foreach ($sensors as $sensor_name => $sensor_data) {
                     ?>
