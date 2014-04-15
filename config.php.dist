@@ -1,6 +1,7 @@
 <?php
 
 $identity = 'FIXXME';
+$samples = 1;
 
 $objects = array(
     'Example 1' => array(
