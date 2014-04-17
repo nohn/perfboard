@@ -30,7 +30,6 @@ foreach ($objects as $object_name => $object_data) {
         } else {
             $signature = $rsa->sign($http_query);
         }
-        $signature = $rsa->sign($http_query);
         $signature = rtrim(strtr(base64_encode($signature), '+/', '-_'), '=');
         $parameters['signature'] = $signature;
         $http_query = http_build_query($parameters);
