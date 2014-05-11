@@ -1,5 +1,33 @@
 <?php
 
+/* vim: set expandtab tabstop=4 shiftwidth=4 softtabstop=4: */
+
+/**
+ * collector/fetch.php
+ *
+ * This file is part of perfboard.
+ *
+ * perfboard is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
+ *
+ * perfboard is distributed in the hope that it will be useful, but
+ * WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public
+ * License along with perfboard.  If not, see
+ * <http://www.gnu.org/licenses/>.
+ *
+ * @category  Nagios
+ * @package   perfboard
+ * @author    Sebastian Nohn <sebastian@nohn.net>
+ * @copyright 2013-2014 Sebastian Nohn <sebastian@nohn.net>
+ * @license   http://opensource.org/licenses/AGPL-3.0 AGPL License
+ * @link      https://github.com/nohn/perfboard
+ */
 // Ubuntu
 // $MTR = '/usr/bin/mtr';
 // $CHECK_HTTP = '/usr/lib/nagios/plugins/check_http';
