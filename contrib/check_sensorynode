@@ -1,0 +1,163 @@
+#!/usr/bin/env php
+<?php
+/* vim: set expandtab tabstop=4 shiftwidth=4 softtabstop=4: */
+
+/**
+ * check_sensorynode
+ *
+ * This file is part of perfboard.
+ *
+ * perfboard is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
+ *
+ * perfboard is distributed in the hope that it will be useful, but
+ * WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public
+ * License along with perfboard.  If not, see
+ * <http://www.gnu.org/licenses/>.
+ *
+ * @category  Nagios
+ * @package   check_sensorynode
+ * @author    Sebastian Nohn <sebastian@nohn.net>
+ * @copyright 2011-2014 Sebastian Nohn <sebastian@nohn.net>
+ * @license   http://opensource.org/licenses/AGPL-3.0 AGPL License
+ * @link      https://github.com/nohn/perfboard
+ */
+define('SERVICE_STATUS', 'Service Status:');
+
+require_once 'Console/Getopt.php';
+
+$shortoptions = 'i:k:s:u:c:w:t:';
+$longoptions = array('identity=', 'key=', 'sensor=', 'url=', 'critical=', 'warning=', 'string=');
+
+$con = new Console_Getopt;
+$args = $con->readPHPArgv();
+array_shift($args);
+$options = $con->getopt2($args, $shortoptions, $longoptions);
+
+foreach ($options[0] as $option) {
+    if ($option[0] == 'i' || $option[0] == '--identity') {
+        $identity = $option[1];
+    }
+    if ($option[0] == 'k' || $option[0] == '--key') {
+        $key_path = $option[1];
+    }
+    if ($option[0] == 's' || $option[0] == '--sensor') {
+        $sensor = $option[1];
+    }
+    if ($option[0] == 'u' || $option[0] == '--url') {
+        $url = $option[1];
+    }
+    if ($option[0] == 'c' || $option[0] == '--critical') {
+        $critical = $option[1];
+    }
+    if ($option[0] == 'w' || $option[0] == '--warning') {
+        $warning = $option[1];
+    }
+    if ($option[0] == 't' || $option[0] == '--string') {
+        $string = $option[1];
+    }
+}
+
+if (!isset($identity) || !isset($key_path) || !isset($sensor) || !isset($url) || !isset($critical) || !isset($warning)) {
+    echo SERVICE_STATUS . ' Unknown. Usage: check_sensorynode --identity=<Your SensorNode identity> --key=<Path to private key> --sensor=<URL to sensor> --url=<URL to check> --warning=<Minimum response time in milliseconds to fail for warning status> --critical=<Minimum response time in milliseconds to fail for critical status> --string=<String>' . "\n";
+    exit(3);
+} else {
+    try {
+        if (!isset($string)) {
+            $string = "";
+        }
+        $parameters = array(
+            'url' => $url,
+            'max' => $warning,
+            'identity' => $identity,
+            'time' => time(),
+            'string' => $string);
+        $http_query = http_build_query($parameters);
+        $key = file_get_contents($key_path);
+        $key_id = openssl_get_privatekey($key);
+        openssl_sign($http_query, $signature, $key);
+        openssl_free_key($key_id);
+        $signature = rtrim(strtr(base64_encode($signature), '+/', '-_'), '=');
+        $parameters['signature'] = $signature;
+        $http_query = http_build_query($parameters);
+        $sensor_url = $sensor . '?' . $http_query;
+        if (!$response = file_get_contents($sensor_url)) {
+            throw new Exception('Can\'t open ' . $sensor_url);
+        }
+        if (!$json = json_decode($response)) {
+            throw new Exception('Can\'t decode. Sensory Node Response: '.$response);
+        }
+
+        if(isset($json->performance->time_total_millis)) {
+	    if (isset($json->performance->time_connect_millis)) {
+                $perfdata_string=  'time_total_millis='    .$json->performance->time_total_millis.';'.$warning.';'.$critical.
+                                   ' time_dns_millis='      .$json->performance->time_dns_millis.
+                                   ' time_connect_millis='  .$json->performance->time_connect_millis.
+                                   ' time_ssl_millis='      .$json->performance->time_ssl_millis.
+                                   ' time_headers_millis='  .$json->performance->time_headers_millis.
+                                   ' time_firstbyte_millis='.$json->performance->time_firstbyte_millis.
+                                   ' time_transfer_millis=' .$json->performance->time_transfer_millis.
+                                   ' size_bytes='           .$json->performance->size_bytes;
+            } else {
+                $perfdata_string=  'time_total_millis='    .$json->performance->time_total_millis.';'.$warning.';'.$critical.
+                                   ' time_dns_millis='      .$json->performance->time_dns_millis.
+                                   ' time_connect_millis='  .'0'.
+                                   ' time_ssl_millis='      .'0'.
+                                   ' time_headers_millis='  .'0'.
+                                   ' time_firstbyte_millis='.'0'.
+                                   ' time_transfer_millis=' .'0'.
+                                   ' size_bytes='           .$json->performance->size_bytes;
+
+		}
+        } else {
+            $perfdata_string = '';
+        }
+
+        if (isset($json->mtr)) {
+            $mtr = '\n\nMTR: IP        Loss%    Last    Avg    Best    Wrst    StDev\n';
+            foreach ($json->mtr as $hop) {
+                $last_ping = 0;
+                $best_ping = 9999;
+                $wrst_ping = 0;
+                if (isset($hop->pings)) {
+                    foreach ($hop->pings as $ping) {
+                        if ($ping <= $best_ping)
+                            $best_ping = $ping;
+                        if ($ping >= $wrst_ping)
+                            $wrst_ping = $ping;
+                        $last_ping = $ping;
+                    }
+                }
+                $mtr .= $hop->ip . '    ' . round($hop->stats->ping_loss, 1) . '%    ' . round($last_ping, 1) . '    ' . round($hop->stats->ping_average, 1) . '    ' . round($best_ping, 1) . '    ' . round($wrst_ping, 1) . '    ' . round($hop->stats->ping_stddev, 1) . '\n';
+            }
+        }
+
+        $status_string = $json->performance->size_bytes . ' bytes in ' . $json->performance->time_total_millis . ' ms';
+
+	if(!isset($json->performance->time_total_millis)) {
+            echo SERVICE_STATUS . " Critical - Host not reachable\n";
+            exit(2);
+	}
+
+        if ($json->performance->time_total_millis > $critical) {
+            echo SERVICE_STATUS . ' Critical - ' . $status_string . ' ' . $mtr . ' | ' . $perfdata_string . "\n";
+            exit(2);
+        } else if ($json->performance->time_total_millis > $warning) {
+            echo SERVICE_STATUS . ' Warning - ' . $status_string . ' ' . $mtr . ' | ' . $perfdata_string . "\n";
+            exit(1);
+        } else {
+            echo SERVICE_STATUS . ' OK - ' . $status_string . ' | ' . $perfdata_string . "\n";
+            exit(0);
+        }
+    } catch (Exception $e) {
+        echo SERVICE_STATUS . ' UNKNOWN - ' . $e->getMessage() . "\n";
+        exit(3);
+    }
+}
+?>

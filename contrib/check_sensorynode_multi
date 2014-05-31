@@ -1,0 +1,146 @@
+#!/usr/bin/env php
+<?php
+/* vim: set expandtab tabstop=4 shiftwidth=4 softtabstop=4: */
+
+/**
+ * check_sensorynode_multi
+ *
+ * This file is part of perfboard.
+ *
+ * perfboard is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
+ *
+ * perfboard is distributed in the hope that it will be useful, but
+ * WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public
+ * License along with perfboard.  If not, see
+ * <http://www.gnu.org/licenses/>.
+ *
+ * @category  Nagios
+ * @package   check_sensorynode_multi
+ * @author    Sebastian Nohn <sebastian@nohn.net>
+ * @copyright 2011-2014 Sebastian Nohn <sebastian@nohn.net>
+ * @license   http://opensource.org/licenses/AGPL-3.0 AGPL License
+ * @link      https://github.com/nohn/perfboard
+ */
+define('SERVICE_STATUS', 'Service Status:');
+
+require_once 'Console/Getopt.php';
+
+$shortoptions = 'i:k:s:u:c:w:t:q:';
+$longoptions = array('identity=', 'key=', 'sensors=', 'url=', 'critical=', 'warning=', 'string=', 'quorum=');
+
+$con = new Console_Getopt;
+$args = $con->readPHPArgv();
+array_shift($args);
+$options = $con->getopt2($args, $shortoptions, $longoptions);
+
+foreach ($options[0] as $option) {
+    if ($option[0] == 'i' || $option[0] == '--identity') {
+        $identity = $option[1];
+    }
+    if ($option[0] == 'k' || $option[0] == '--key') {
+        $key_path = $option[1];
+    }
+    if ($option[0] == 's' || $option[0] == '--sensors') {
+        $sensors = $option[1];
+    }
+    if ($option[0] == 'u' || $option[0] == '--url') {
+        $url = $option[1];
+    }
+    if ($option[0] == 'c' || $option[0] == '--critical') {
+        $critical = $option[1];
+    }
+    if ($option[0] == 'w' || $option[0] == '--warning') {
+        $warning = $option[1];
+    }
+    if ($option[0] == 'q' || $option[0] == '--quorum') {
+        $quorum = $option[1];
+    }
+    if ($option[0] == 't' || $option[0] == '--string') {
+        $string = $option[1];
+    }
+}
+
+if (!isset($identity) || !isset($key_path) || !isset($sensors) || !isset($url) || !isset($critical) || !isset($warning) || !isset($quorum)) {
+    echo SERVICE_STATUS . ' Unknown. Usage: check_sensorynode --identity=<Your SensorNode identity> --key=<Path to private key> --sensors=<URLs to sensors, separated by a space> --url=<URL to check> --warning=<Minimum response time in milliseconds to fail for warning status> --critical=<Minimum response time in milliseconds to fail for critical status> --quorum=<allowed percentage of sensors allowed to fail, in decimal> --string=<String>' . "\n";
+    exit(3);
+} else {
+    try {
+        $total_sensor_result_ok = 0;
+        $total_sensor_result_warning = 0;
+	$total_sensor_result_critical = 0;
+    	$sensor_list = explode(' ', $sensors);
+	$perfdata_string = '';
+	$status_string = '';
+	foreach($sensor_list as $sensor) { 
+    	    if (!isset($string)) {
+                $string = "";
+            }
+            $parameters = array(
+                'url' => $url,
+            	'max' => $warning,
+            	'identity' => $identity,
+            	'time' => time(),
+            	'string' => $string);
+            $http_query = http_build_query($parameters);
+	    $key = file_get_contents($key_path);
+	    $key_id = openssl_get_privatekey($key);
+	    openssl_sign($http_query, $signature, $key);
+	    openssl_free_key($key_id);
+	    $signature = rtrim(strtr(base64_encode($signature), '+/', '-_'), '=');
+	    $parameters['signature'] = $signature;
+	    $http_query = http_build_query($parameters);
+	    $sensor_url = $sensor . '?' . $http_query;
+	    if (!$response = file_get_contents($sensor_url)) {
+	        throw new Exception('Can\'t open ' . $sensor_url);
+	    }
+	    if (!$json = json_decode($response)) {
+	        throw new Exception('Can\'t decode. Sensory Node Response: '.$response);
+	    }
+
+	    if(isset($json->performance->time_total_millis)) {
+	      $sensor_string_nice = preg_replace("/[^\w\.]+/", "_", str_replace('http://', '', $sensor));
+	        $perfdata_string .= ' time_total_ms_via_'.$sensor_string_nice.'='.$json->performance->time_total_millis.';'.$warning.';'.$critical.
+                                    ' size_bytes_via_'.$sensor_string_nice.'='       .$json->performance->size_bytes;
+	    }
+	    $status_string .= 'via '.$sensor.': '.$json->performance->size_bytes . ' bytes in ' . $json->performance->time_total_millis . ' ms ';
+	    if ($json->performance->time_total_millis > $critical) {
+		$total_sensor_result_critical++;
+	    } else if ($json->performance->time_total_millis > $warning) {
+	        $total_sensor_result_warning++;
+	    } else {
+	        $total_sensor_result_ok++;
+	    }
+        }
+	$total_sensor_result = $total_sensor_result_critical +
+	    $total_sensor_result_warning +
+	    $total_sensor_result_ok;
+	$status_string .= '. Sensors: '.$total_sensor_result_ok.' ok, '.$total_sensor_result_warning.' warning, '.$total_sensor_result_critical.' critical';
+
+	if($total_sensor_result == 0) {
+	    echo SERVICE_STATUS . " Critical - No results\n";
+	    exit(2);
+	}
+	
+	if ($total_sensor_result_critical/$total_sensor_result > $quorum) {
+	    echo SERVICE_STATUS . ' Critical - ' . $status_string . ' | ' . $perfdata_string . "\n";
+	    exit(2);
+	} else if (($total_sensor_result_critical+$total_sensor_result_warning)/$total_sensor_result > $quorum) {
+	    echo SERVICE_STATUS . ' Warning - ' . $status_string . ' | ' . $perfdata_string . "\n";
+	    exit(1);
+	} else {
+	    echo SERVICE_STATUS . ' OK - ' . $status_string . ' | ' . $perfdata_string . "\n";
+	    exit(0);
+	}
+    } catch (Exception $e) {
+        echo SERVICE_STATUS . ' UNKNOWN - ' . $e->getMessage() . "\n";
+        exit(3);
+    }
+}
+?>
