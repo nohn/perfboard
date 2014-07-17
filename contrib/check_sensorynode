@@ -91,30 +91,29 @@ if (!isset($identity) || !isset($key_path) || !isset($sensor) || !isset($url) ||
             throw new Exception('Can\'t open ' . $sensor_url);
         }
         if (!$json = json_decode($response)) {
-            throw new Exception('Can\'t decode. Sensory Node Response: '.$response);
+            throw new Exception('Can\'t decode. Sensory Node Response: ' . $response);
         }
 
-        if(isset($json->performance->time_total_millis)) {
-	    if (isset($json->performance->time_connect_millis)) {
-                $perfdata_string=  'time_total_millis='    .$json->performance->time_total_millis.';'.$warning.';'.$critical.
-                                   ' time_dns_millis='      .$json->performance->time_dns_millis.
-                                   ' time_connect_millis='  .$json->performance->time_connect_millis.
-                                   ' time_ssl_millis='      .$json->performance->time_ssl_millis.
-                                   ' time_headers_millis='  .$json->performance->time_headers_millis.
-                                   ' time_firstbyte_millis='.$json->performance->time_firstbyte_millis.
-                                   ' time_transfer_millis=' .$json->performance->time_transfer_millis.
-                                   ' size_bytes='           .$json->performance->size_bytes;
+        if (isset($json->performance->time_total_millis)) {
+            if (isset($json->performance->time_connect_millis)) {
+                $perfdata_string = 'time_total_millis=' . $json->performance->time_total_millis . ';' . $warning . ';' . $critical .
+                        ' time_dns_millis=' . $json->performance->time_dns_millis .
+                        ' time_connect_millis=' . $json->performance->time_connect_millis .
+                        ' time_ssl_millis=' . $json->performance->time_ssl_millis .
+                        ' time_headers_millis=' . $json->performance->time_headers_millis .
+                        ' time_firstbyte_millis=' . $json->performance->time_firstbyte_millis .
+                        ' time_transfer_millis=' . $json->performance->time_transfer_millis .
+                        ' size_bytes=' . $json->performance->size_bytes;
             } else {
-                $perfdata_string=  'time_total_millis='    .$json->performance->time_total_millis.';'.$warning.';'.$critical.
-                                   ' time_dns_millis='      .$json->performance->time_dns_millis.
-                                   ' time_connect_millis='  .'0'.
-                                   ' time_ssl_millis='      .'0'.
-                                   ' time_headers_millis='  .'0'.
-                                   ' time_firstbyte_millis='.'0'.
-                                   ' time_transfer_millis=' .'0'.
-                                   ' size_bytes='           .$json->performance->size_bytes;
-
-		}
+                $perfdata_string = 'time_total_millis=' . $json->performance->time_total_millis . ';' . $warning . ';' . $critical .
+                        ' time_dns_millis=' . $json->performance->time_dns_millis .
+                        ' time_connect_millis=' . '0' .
+                        ' time_ssl_millis=' . '0' .
+                        ' time_headers_millis=' . '0' .
+                        ' time_firstbyte_millis=' . '0' .
+                        ' time_transfer_millis=' . '0' .
+                        ' size_bytes=' . $json->performance->size_bytes;
+            }
         } else {
             $perfdata_string = '';
         }
@@ -140,10 +139,10 @@ if (!isset($identity) || !isset($key_path) || !isset($sensor) || !isset($url) ||
 
         $status_string = $json->performance->size_bytes . ' bytes in ' . $json->performance->time_total_millis . ' ms';
 
-	if(!isset($json->performance->time_total_millis)) {
+        if (!isset($json->performance->time_total_millis)) {
             echo SERVICE_STATUS . " Critical - Host not reachable\n";
             exit(2);
-	}
+        }
 
         if ($json->performance->time_total_millis > $critical) {
             echo SERVICE_STATUS . ' Critical - ' . $status_string . ' ' . $mtr . ' | ' . $perfdata_string . "\n";

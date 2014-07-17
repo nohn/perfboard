@@ -74,70 +74,70 @@ if (!isset($identity) || !isset($key_path) || !isset($sensors) || !isset($url) |
     try {
         $total_sensor_result_ok = 0;
         $total_sensor_result_warning = 0;
-	$total_sensor_result_critical = 0;
-    	$sensor_list = explode(' ', $sensors);
-	$perfdata_string = '';
-	$status_string = '';
-	foreach($sensor_list as $sensor) { 
-    	    if (!isset($string)) {
+        $total_sensor_result_critical = 0;
+        $sensor_list = explode(' ', $sensors);
+        $perfdata_string = '';
+        $status_string = '';
+        foreach ($sensor_list as $sensor) {
+            if (!isset($string)) {
                 $string = "";
             }
             $parameters = array(
                 'url' => $url,
-            	'max' => $warning,
-            	'identity' => $identity,
-            	'time' => time(),
-            	'string' => $string);
+                'max' => $warning,
+                'identity' => $identity,
+                'time' => time(),
+                'string' => $string);
             $http_query = http_build_query($parameters);
-	    $key = file_get_contents($key_path);
-	    $key_id = openssl_get_privatekey($key);
-	    openssl_sign($http_query, $signature, $key);
-	    openssl_free_key($key_id);
-	    $signature = rtrim(strtr(base64_encode($signature), '+/', '-_'), '=');
-	    $parameters['signature'] = $signature;
-	    $http_query = http_build_query($parameters);
-	    $sensor_url = $sensor . '?' . $http_query;
-	    if (!$response = file_get_contents($sensor_url)) {
-	        throw new Exception('Can\'t open ' . $sensor_url);
-	    }
-	    if (!$json = json_decode($response)) {
-	        throw new Exception('Can\'t decode. Sensory Node Response: '.$response);
-	    }
+            $key = file_get_contents($key_path);
+            $key_id = openssl_get_privatekey($key);
+            openssl_sign($http_query, $signature, $key);
+            openssl_free_key($key_id);
+            $signature = rtrim(strtr(base64_encode($signature), '+/', '-_'), '=');
+            $parameters['signature'] = $signature;
+            $http_query = http_build_query($parameters);
+            $sensor_url = $sensor . '?' . $http_query;
+            if (!$response = file_get_contents($sensor_url)) {
+                throw new Exception('Can\'t open ' . $sensor_url);
+            }
+            if (!$json = json_decode($response)) {
+                throw new Exception('Can\'t decode. Sensory Node Response: ' . $response);
+            }
 
-	    if(isset($json->performance->time_total_millis)) {
-	      $sensor_string_nice = preg_replace("/[^\w\.]+/", "_", str_replace('http://', '', $sensor));
-	        $perfdata_string .= ' time_total_ms_via_'.$sensor_string_nice.'='.$json->performance->time_total_millis.';'.$warning.';'.$critical.
-                                    ' size_bytes_via_'.$sensor_string_nice.'='       .$json->performance->size_bytes;
-	    }
-	    $status_string .= 'via '.$sensor.': '.$json->performance->size_bytes . ' bytes in ' . $json->performance->time_total_millis . ' ms ';
-	    if ($json->performance->time_total_millis > $critical) {
-		$total_sensor_result_critical++;
-	    } else if ($json->performance->time_total_millis > $warning) {
-	        $total_sensor_result_warning++;
-	    } else {
-	        $total_sensor_result_ok++;
-	    }
+            if (isset($json->performance->time_total_millis)) {
+                $sensor_string_nice = preg_replace("/[^\w\.]+/", "_", str_replace('http://', '', $sensor));
+                $perfdata_string .= ' time_total_ms_via_' . $sensor_string_nice . '=' . $json->performance->time_total_millis . ';' . $warning . ';' . $critical .
+                        ' size_bytes_via_' . $sensor_string_nice . '=' . $json->performance->size_bytes;
+            }
+            $status_string .= 'via ' . $sensor . ': ' . $json->performance->size_bytes . ' bytes in ' . $json->performance->time_total_millis . ' ms ';
+            if ($json->performance->time_total_millis > $critical) {
+                $total_sensor_result_critical++;
+            } else if ($json->performance->time_total_millis > $warning) {
+                $total_sensor_result_warning++;
+            } else {
+                $total_sensor_result_ok++;
+            }
         }
-	$total_sensor_result = $total_sensor_result_critical +
-	    $total_sensor_result_warning +
-	    $total_sensor_result_ok;
-	$status_string .= '. Sensors: '.$total_sensor_result_ok.' ok, '.$total_sensor_result_warning.' warning, '.$total_sensor_result_critical.' critical';
+        $total_sensor_result = $total_sensor_result_critical +
+                $total_sensor_result_warning +
+                $total_sensor_result_ok;
+        $status_string .= '. Sensors: ' . $total_sensor_result_ok . ' ok, ' . $total_sensor_result_warning . ' warning, ' . $total_sensor_result_critical . ' critical';
 
-	if($total_sensor_result == 0) {
-	    echo SERVICE_STATUS . " Critical - No results\n";
-	    exit(2);
-	}
-	
-	if ($total_sensor_result_critical/$total_sensor_result > $quorum) {
-	    echo SERVICE_STATUS . ' Critical - ' . $status_string . ' | ' . $perfdata_string . "\n";
-	    exit(2);
-	} else if (($total_sensor_result_critical+$total_sensor_result_warning)/$total_sensor_result > $quorum) {
-	    echo SERVICE_STATUS . ' Warning - ' . $status_string . ' | ' . $perfdata_string . "\n";
-	    exit(1);
-	} else {
-	    echo SERVICE_STATUS . ' OK - ' . $status_string . ' | ' . $perfdata_string . "\n";
-	    exit(0);
-	}
+        if ($total_sensor_result == 0) {
+            echo SERVICE_STATUS . " Critical - No results\n";
+            exit(2);
+        }
+
+        if (1 - ($total_sensor_result_critical / $total_sensor_result) < $quorum) {
+            echo SERVICE_STATUS . ' Critical - ' . $status_string . ' | ' . $perfdata_string . "\n";
+            exit(2);
+        } else if (1 - (($total_sensor_result_critical + $total_sensor_result_warning) / $total_sensor_result) < $quorum) {
+            echo SERVICE_STATUS . ' Warning - ' . $status_string . ' | ' . $perfdata_string . "\n";
+            exit(1);
+        } else {
+            echo SERVICE_STATUS . ' OK - ' . $status_string . ' | ' . $perfdata_string . "\n";
+            exit(0);
+        }
     } catch (Exception $e) {
         echo SERVICE_STATUS . ' UNKNOWN - ' . $e->getMessage() . "\n";
         exit(3);
