@@ -122,7 +122,7 @@ if (isset($string)) {
     $checkstring = '-s ' . $string;
 }
 
-exec($CHECK_HTTP . ' -A "Mozilla/5.0 (compatible; SensoryNode 0.1)" ' . $checkstring . ' ' . $ssl . ' -I ' . $ip . ' -H ' . $url['host'] . ' -u ' . $path, $check_output);
+exec($CHECK_HTTP . ' -A "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/43.0.2357.130 Safari/537.36 SensoryNode/0.2" ' . $checkstring . ' ' . $ssl . ' -I ' . $ip . ' -H ' . $url['host'] . ' -u ' . $path, $check_output);
 
 if (empty($check_output)) {
     die('monitoring request failed');
