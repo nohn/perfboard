@@ -31,6 +31,8 @@
 $identity = 'FIXXME';
 $samples = 1;
 $nsca_host = false;
+$logging_enabled = false;
+$logging_path = '/var/log/perfboard/';
 
 $objects = array(
     'Example 1' => array(
