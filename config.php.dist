@@ -31,6 +31,7 @@
 $identity = 'FIXXME';
 $samples = 1;
 $nsca_host = false;
+$timezone = 'UTC';
 $logging_enabled = false;
 $logging_path = '/var/log/perfboard/';
 
