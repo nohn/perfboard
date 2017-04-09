@@ -23,7 +23,7 @@
  * @category  Nagios
  * @package   perfboard
  * @author    Sebastian Nohn <sebastian@nohn.net>
- * @copyright 2013-2014 Sebastian Nohn <sebastian@nohn.net>
+ * @copyright 2013-2016 Sebastian Nohn <sebastian@nohn.net>
  * @license   http://opensource.org/licenses/AGPL-3.0 AGPL License
  * @link      https://github.com/nohn/perfboard
  */
@@ -45,14 +45,14 @@
             }
             th {
                 color: white;
-                font-size: 150%;
+                font-size: 100%;
                 background-color: #4b4b4b;
             }
             td {
                 text-align: center;
                 color: white;
                 vertical-align: middle;
-                font-size: 300%;
+                font-size: 150%;
             }
         </style>
     </head>
@@ -73,6 +73,7 @@
                     <?php
                 }
                 ?>
+                <th style="height: 1em;">AVG</th>
             </tr>
             <?php
             foreach ($objects as $object_name => $object_data) {
@@ -85,9 +86,14 @@
                         $perfdata = (int) file_get_contents('/tmp/perfboard_' . $sensor_file);
                         $object_stats[$object_name][] = $perfdata;
                         $sensor_stats[$sensor_name][] = $perfdata;
-                        if ($perfdata == 0 || $perfdata >= $object_data['crit']) {
+                        if (isset($sensor_data['penalty'])) {
+                            $penalty = 1+$sensor_data['penalty'];
+                        } else {
+                            $penalty = 1;
+                        }
+                        if ($perfdata == 0 || $perfdata >= $object_data['crit']*$penalty) {
                             $color = '#ec663c;';
-                        } else if ($perfdata >= $object_data['warn']) {
+                        } else if ($perfdata >= $object_data['warn']*$penalty) {
                             $color = '#ff9618;';
                         } else {
                             $color = '#96bf48';
@@ -97,10 +103,22 @@
                         <?php
                     }
                     ?>
+                    <th><?php echo round(array_sum($object_stats[$object_name])/count($object_stats[$object_name])); ?></th>
                 </tr>
                 <?php
             }
             ?>
+            <tr>
+                <th>response time (ms)</th>
+                <?php
+                foreach ($sensors as $sensor_name => $sensor_data) {
+                    ?>
+                    <th style="height: 1em;"><?php echo round(array_sum($sensor_stats[$sensor_name])/count($sensor_stats[$sensor_name])); ?></th>
+                    <?php
+                }
+                ?>
+                <th style="height: 1em;">AVG</th>
+            </tr>
         </table>
     </body>
 </html>

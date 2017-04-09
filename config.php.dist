@@ -24,12 +24,16 @@
  * @category  Nagios
  * @package   perfboard
  * @author    Sebastian Nohn <sebastian@nohn.net>
- * @copyright 2013-2014 Sebastian Nohn <sebastian@nohn.net>
+ * @copyright 2013-2016 Sebastian Nohn <sebastian@nohn.net>
  * @license   http://opensource.org/licenses/AGPL-3.0 AGPL License
  * @link      https://github.com/nohn/perfboard
  */
 $identity = 'FIXXME';
 $samples = 1;
+$nsca_host = false;
+$timezone = 'UTC';
+$logging_enabled = false;
+$logging_path = '/var/log/perfboard/';
 
 $objects = array(
     'Example 1' => array(
@@ -46,5 +50,5 @@ $objects = array(
 
 $sensors = array(
     'Sensor 1' => array('url' => 'http://sensor1.example.com/'),
-    'Sensor 2' => array('url' => 'http://sensor2.example.com/'),
+    'Sensor 2' => array('url' => 'http://sensor2.example.com/', 'penalty' => '1'), // penalty 1 means, sensor is allowed to be 100% slower e.g. double the latency.
 );

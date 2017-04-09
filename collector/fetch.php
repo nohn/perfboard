@@ -30,6 +30,8 @@
  */
 require_once '../config.php';
 
+date_default_timezone_set($timezone);
+
 $key = file_get_contents('../keys/' . $identity . '.pem');
 
 if (extension_loaded('openssl')) {
@@ -87,5 +89,8 @@ foreach ($objects as $object_name => $object_data) {
         unset($perfdata_tmp);
 
         file_put_contents('/tmp/perfboard_' . $sensor_file, $perfdata);
+        if ($logging_enabled) {
+            file_put_contents($logging_path.'perfboard-'.date('Y-m-d').'.log', date('Y-m-d H:i:s e').';'.$sensor_name.';'.$object_name.';'.$perfdata."\n", FILE_APPEND);
+        }
     }
 }
