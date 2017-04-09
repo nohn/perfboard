@@ -36,6 +36,8 @@
 // CentOS
 $MTR = '/usr/sbin/mtr';
 $CHECK_HTTP = '/usr/lib64/nagios/plugins/check_http';
+// Gentoo
+// $MTR = 'sudo /usr/sbin/mtr'; // in /etc/sudoers: apache ALL=(ROOT) NOPASSWD: /usr/sbin/mtr
 
 $return = array();
 
@@ -110,19 +112,23 @@ if (isset($_GET['trace']) && $_GET['trace'] != '') {
 $check_output = array();
 if ($url['scheme'] == 'https') {
     $ssl = '--ssl';
+} else {
+    $ssl = '';
 }
 
 $path = $url['path'];
 
 if (isset($url['query']) && ($url['query'] != '')) {
-    $path .= '?' . $url['query'];
+    $path .= '?'.$url['query'];
 }
 
 if (isset($string)) {
     $checkstring = '-s ' . $string;
-}
+} else {
+    $checkstring = '';
+} 
 
-exec($CHECK_HTTP . ' -A "Mozilla/5.0 (compatible; SensoryNode 0.1)" ' . $checkstring . ' ' . $ssl . ' -I ' . $ip . ' -H ' . $url['host'] . ' -u ' . $path, $check_output);
+exec($CHECK_HTTP . ' -E -A "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/43.0.2357.130 Safari/537.36 check_http/1.1 SensoryNode 0.1" ' . $checkstring . ' ' . $ssl . ' -I '. $ip . ' -H ' . $url['host']. ' -u ' .$path, $check_output);
 
 if (empty($check_output)) {
     die('monitoring request failed');
@@ -137,7 +143,7 @@ foreach ($perfdata_temp as $perfvalue) {
         $performance_temp3 = ($perfdata_temp2[1] * 1000) + $time_dns;
     } else if ($perfdata_temp2[0] == 'size') {
         $performance_temp4 = $perfdata_temp2[1] * 1;
-    } else {
+    } else if (isset($perfdata_temp2[1])) {
         $performance[$perfdata_temp2[0] . '_millis'] = $perfdata_temp2[1] * 1000;
     }
 }
